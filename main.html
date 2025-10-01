@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exoskeleton Golfer Simulation</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #e0f7f1, #c8e6c9, #e0f7f1);
+        min-height: 100vh;
+        color: #2e7d32;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .container {
+        max-width: 1400px;
+        width: 100%;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(129, 199, 132, 0.3);
+      }
+
+      .header {
+        text-align: center;
+        padding: 25px 20px;
+        background: linear-gradient(to right, #e8f5e9, #f1f8e9);
+        color: #1b5e20;
+        border-bottom: 2px solid #c8e6c9;
+      }
+
+      .header h1 {
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        font-weight: 700;
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        color: #388e3c;
+        max-width: 700px;
+        margin: 0 auto;
+        font-weight: 500;
+      }
+
+      .status-bar {
+        background: linear-gradient(to right, #f1f8e9, #e8f5e9);
+        border-radius: 15px;
+        padding: 15px 25px;
+        margin: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        border: 1px solid #c8e6c9;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .status-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #1b5e20;
+        font-weight: 600;
+      }
+
+      .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #4caf50;
+        animation: pulse 2s infinite;
+        box-shadow: 0 0 10px #81c784;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .main-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        padding: 0 20px 20px;
+      }
+
+      .panel {
+        background: linear-gradient(to bottom, #f8fdfa, #ffffff);
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        border: 2px solid #e0f2f1;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .panel:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+        border-color: #b2dfdb;
+      }
+
+      .panel h3 {
+        color: #2e7d32;
+        margin-bottom: 20px;
+        font-size: 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+      }
+
+      .scan-area {
+        background: linear-gradient(to bottom, #e8f5f2, #f1f9f8);
+        border: 2px solid #b2dfdb;
+        border-radius: 15px;
+        height: 420px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        box-shadow: inset 0 0 15px rgba(178, 223, 219, 0.3);
+      }
+
+      .person-model {
+        width: 200px;
+        height: 400px;
+        position: relative;
+        transform: rotateY(0deg);
+        transition: transform 0.5s ease;
+        display: flex;
+        justify-content: center;
+      }
+
+      /* Head */
+      .skeleton-head {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 40px;
+        height: 50px;
+        transform: translateX(-50%);
+        border-radius: 50%;
+        background: rgba(76, 175, 80, 0.1);
+        border: 3px solid #4caf50;
+        box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
+        z-index: 10;
+      }
+
+      /* Neck */
+      .skeleton-neck {
+        position: absolute;
+        top: 50px;
+        left: 50%;
+        width: 8px;
+        height: 20px;
+        transform: translateX(-50%);
+        background: #4caf50;
+        box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+        z-index: 9;
+      }
+
+      /* Spine */
+      .skeleton-spine {
+        position: absolute;
+        top: 70px;
+        left: 50%;
+        width: 6px;
+        height: 140px;
+        transform: translateX(-50%);
+        background: #4caf50;
+        box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+        z-index: 8;
+      }
+
+      /* Ribcage */
+      .skeleton-ribcage {
+        position: absolute;
+        top: 70px;
+        left: 50%;
+        width: 80px;
+        height: 90px;
+        transform: translateX(-50%);
+        border-radius: 40px;
+        border: 2px solid #4caf50;
+        background: rgba(76, 175, 80, 0.05);
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+        z-index: 7;
+      }
+
+      /* Pelvis */
+      .skeleton-pelvis {
+        position: absolute;
+        top: 210px;
+        left: 50%;
+        width: 70px;
+        height: 40px;
+        transform: translateX(-50%);
+        border-radius: 35px;
+        border: 2px solid #4caf50;
+        background: rgba(76, 175, 80, 0.05);
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+        z-index: 6;
+      }
+
+      /* Arms */
+      .skeleton-arm {
+        position: absolute;
+        background: linear-gradient(to bottom, #4caf50, #388e3c);
+        box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+        border-radius: 3px;
+        z-index: 5;
+      }
+
+      .left-upper-arm {
+        top: 80px;
+        left: 30px;
+        width: 12px;
+        height: 65px;
+        transform: rotate(-20deg);
+        transform-origin: top center;
+      }
+
+      .left-lower-arm {
+        top: 140px;
+        left: 18px;
+        width: 10px;
+        height: 60px;
+        transform: rotate(-35deg);
+        transform-origin: top center;
+      }
+
+      .right-upper-arm {
+        top: 80px;
+        right: 30px;
+        width: 12px;
+        height: 65px;
+        transform: rotate(20deg);
+        transform-origin: top center;
+      }
+
+      .right-lower-arm {
+        top: 140px;
+        right: 18px;
+        width: 10px;
+        height: 60px;
+        transform: rotate(35deg);
+        transform-origin: top center;
+      }
+
+      /* Legs */
+      .skeleton-leg {
+        position: absolute;
+        background: linear-gradient(to bottom, #4caf50, #388e3c);
+        box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+        border-radius: 3px;
+        z-index: 4;
+      }
+
+      .left-upper-leg {
+        top: 250px;
+        left: 55px;
+        width: 14px;
+        height: 90px;
+        transform: rotate(-5deg);
+        transform-origin: top center;
+      }
+
+      .left-lower-leg {
+        top: 340px;
+        left: 52px;
+        width: 12px;
+        height: 85px;
+        transform: rotate(-5deg);
+        transform-origin: top center;
+      }
+
+      .right-upper-leg {
+        top: 250px;
+        right: 55px;
+        width: 14px;
+        height: 90px;
+        transform: rotate(5deg);
+        transform-origin: top center;
+      }
+
+      .right-lower-leg {
+        top: 340px;
+        right: 52px;
+        width: 12px;
+        height: 85px;
+        transform: rotate(5deg);
+        transform-origin: top center;
+      }
+
+      /* Feet */
+      .skeleton-foot {
+        position: absolute;
+        width: 30px;
+        height: 10px;
+        background: #4caf50;
+        border-radius: 5px;
+        box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+        z-index: 3;
+      }
+
+      .left-foot {
+        top: 365px;
+        left: 65px;
+        transform: rotate(-5deg);
+      }
+
+      .right-foot {
+        top: 365px;
+        right: 55px;
+        transform: rotate(5deg);
+      }
+
+      /* Joints */
+      .skeleton-joint {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #ff9800;
+        border: 2px solid #4caf50;
+        border-radius: 50%;
+        box-shadow: 0 0 12px rgba(255, 152, 0, 0.6);
+        animation: jointPulse 2s ease-in-out infinite;
+        z-index: 11;
+      }
+
+      @keyframes jointPulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.3);
+        }
+      }
+
+      /* Joint positions */
+      .neck-joint {
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .left-shoulder {
+        top: 80px;
+        left: 30px;
+      }
+      .right-shoulder {
+        top: 80px;
+        right: 30px;
+      }
+      .left-elbow {
+        top: 140px;
+        left: 18px;
+      }
+      .right-elbow {
+        top: 140px;
+        right: 18px;
+      }
+      .left-wrist {
+        top: 195px;
+        left: 8px;
+      }
+      .right-wrist {
+        top: 195px;
+        right: 8px;
+      }
+      .left-hip {
+        top: 250px;
+        left: 55px;
+      }
+      .right-hip {
+        top: 250px;
+        right: 55px;
+      }
+      .left-knee {
+        top: 340px;
+        left: 52px;
+      }
+      .right-knee {
+        top: 340px;
+        right: 52px;
+      }
+      .left-ankle {
+        top: 420px;
+        left: 50px;
+      }
+      .right-ankle {
+        top: 420px;
+        right: 50px;
+      }
+
+      /* Golf club */
+      .golf-club {
+        position: absolute;
+        top: 150px;
+        left: 18px;
+        width: 5px;
+        height: 90px;
+        background: linear-gradient(to bottom, #8d6e63, #5d4037);
+        transform: rotate(-30deg);
+        transform-origin: top;
+        box-shadow: 0 0 5px rgba(141, 110, 99, 0.5);
+        z-index: 2;
+      }
+
+      .golf-club::after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: -8px;
+        width: 20px;
+        height: 15px;
+        background: #bdbdbd;
+        border-radius: 3px;
+        box-shadow: 0 0 8px rgba(189, 189, 189, 0.6);
+      }
+
+      /* Balance indicator */
+      .balance-indicator {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        height: 10px;
+        background: rgba(255, 152, 0, 0.2);
+        border-radius: 5px;
+        overflow: hidden;
+        border: 1px solid #ffe0b2;
+      }
+
+      .balance-fill {
+        height: 100%;
+        width: 50%;
+        background: linear-gradient(to right, #ff9800, #ffb74d);
+        border-radius: 5px;
+        transition: width 0.5s ease;
+      }
+
+      .scan-lines {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 10px,
+          rgba(76, 175, 80, 0.2) 10px,
+          rgba(76, 175, 80, 0.2) 12px
+        );
+        animation: scanMove 2s linear infinite;
+        opacity: 0;
+        z-index: 1;
+      }
+
+      .scan-lines.active {
+        opacity: 1;
+      }
+
+      @keyframes scanMove {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
+      }
+
+      .pressure-plate {
+        width: 100%;
+        height: 300px;
+        background: linear-gradient(to bottom, #e8f5f2, #f1f9f8);
+        border-radius: 15px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 20px;
+        border: 2px solid #b2dfdb;
+        box-shadow: inset 0 0 15px rgba(178, 223, 219, 0.3);
+      }
+
+      .pressure-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(6, 1fr);
+        height: 100%;
+        gap: 2px;
+        padding: 10px;
+      }
+
+      .pressure-cell {
+        background: #e0f2f1;
+        border-radius: 3px;
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #00796b;
+        font-size: 0.7rem;
+        border: 1px solid #b2dfdb;
+      }
+
+      .pressure-cell.active {
+        background: var(--pressure-color);
+        box-shadow: 0 0 10px var(--pressure-color);
+        color: white;
+        font-weight: bold;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .weight-display {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .weight-metric {
+        background: linear-gradient(to bottom, #f1f8e9, #ffffff);
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        border: 2px solid #e8f5e9;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .weight-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2e7d32;
+        margin-bottom: 5px;
+        text-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+      }
+
+      .weight-label {
+        color: #388e3c;
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .controls {
+        background: linear-gradient(to right, #f1f8e9, #e8f5e9);
+        border-radius: 20px;
+        padding: 25px;
+        margin: 20px;
+        text-align: center;
+        border: 2px solid #c8e6c9;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .controls h3 {
+        color: #2e7d32;
+        margin-bottom: 20px;
+        font-size: 1.4rem;
+        font-weight: 700;
+      }
+
+      .btn-group {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .btn {
+        background: linear-gradient(45deg, #4caf50, #2e7d32);
+        color: white;
+        border: none;
+        padding: 14px 28px;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 2px solid #388e3c;
+      }
+
+      .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(76, 175, 80, 0.4);
+        background: linear-gradient(45deg, #66bb6a, #388e3c);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn.secondary {
+        background: linear-gradient(45deg, #81c784, #4caf50);
+        box-shadow: 0 4px 10px rgba(129, 199, 132, 0.3);
+        border: 2px solid #388e3c;
+      }
+
+      .btn.secondary:hover {
+        box-shadow: 0 6px 15px rgba(129, 199, 132, 0.4);
+        background: linear-gradient(45deg, #a5d6a7, #66bb6a);
+      }
+
+      .data-panel {
+        background: linear-gradient(to right, #f1f8e9, #e8f5e9);
+        border-radius: 20px;
+        padding: 25px;
+        margin: 20px;
+        border: 2px solid #c8e6c9;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .data-panel h3 {
+        color: #2e7d32;
+        margin-bottom: 20px;
+        font-size: 1.4rem;
+        font-weight: 700;
+      }
+
+      .data-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+      }
+
+      .data-item {
+        background: linear-gradient(to bottom, #ffffff, #f8fdfa);
+        padding: 18px;
+        border-radius: 10px;
+        border-left: 4px solid #4caf50;
+        color: #2e7d32;
+        border: 1px solid #e0f2f1;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      }
+
+      .data-item strong {
+        display: block;
+        margin-bottom: 8px;
+        color: #1b5e20;
+        font-weight: 600;
+      }
+
+      .instructions {
+        background: linear-gradient(to right, #e8f5e9, #f1f8e9);
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 20px;
+        color: #2e7d32;
+        border: 2px solid #c8e6c9;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .instructions h4 {
+        margin-bottom: 12px;
+        color: #2e7d32;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+      }
+
+      .instructions ul {
+        padding-left: 20px;
+      }
+
+      .instructions li {
+        margin-bottom: 8px;
+        line-height: 1.5;
+        color: #388e3c;
+      }
+
+      .view-toggle {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .view-option {
+        background: linear-gradient(to bottom, #e8f5e9, #f1f8e9);
+        padding: 12px 20px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #2e7d32;
+        font-weight: 600;
+        border: 2px solid #c8e6c9;
+      }
+
+      .view-option.active {
+        background: linear-gradient(45deg, #4caf50, #2e7d32);
+        color: white;
+        box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+        border: 2px solid #388e3c;
+      }
+
+      .view-option:hover:not(.active) {
+        background: linear-gradient(to bottom, #f1f8e9, #e8f5e9);
+        transform: translateY(-2px);
+      }
+
+      @media (max-width: 900px) {
+        .main-content {
+          grid-template-columns: 1fr;
+        }
+
+        .header h1 {
+          font-size: 1.8rem;
+        }
+
+        .status-bar {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .weight-display {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .btn {
+          padding: 12px 20px;
+          font-size: 1rem;
+        }
+
+        .person-model {
+          transform: scale(0.8);
+        }
+
+        .view-option {
+          padding: 10px 15px;
+          font-size: 0.9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>
+          <i class="fas fa-weight-hanging"></i> Exoskeleton Golfer Simulation
+        </h1>
+        <p>
+          Advanced Body Scanning & Pressure Distribution System for Golf
+          Performance by Group 2
+        </p>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-item">
+          <div class="status-dot"></div>
+          <span
+            ><strong>Camera:</strong> <span id="cameraStatus">Ready</span></span
+          >
+        </div>
+        <div class="status-item">
+          <div class="status-dot"></div>
+          <span
+            ><strong>Sensors:</strong>
+            <span id="sensorStatus">Active</span></span
+          >
+        </div>
+        <div class="status-item">
+          <div class="status-dot"></div>
+          <span
+            ><strong>Processing:</strong>
+            <span id="processingStatus">Standby</span></span
+          >
+        </div>
+      </div>
+
+      <div class="main-content">
+        <div class="panel scan-panel">
+          <h3><i class="fas fa-camera"></i> 3D Body Scanner</h3>
+          <div class="scan-area">
+            <div class="person-model" id="personModel">
+              <!-- Skeleton structure -->
+              <div class="skeleton-head"></div>
+              <div class="skeleton-neck"></div>
+              <div class="skeleton-spine"></div>
+              <div class="skeleton-ribcage"></div>
+              <div class="skeleton-pelvis"></div>
+
+              <!-- Arms -->
+              <div class="skeleton-arm left-upper-arm"></div>
+              <div class="skeleton-arm left-lower-arm"></div>
+              <div class="skeleton-arm right-upper-arm"></div>
+              <div class="skeleton-arm right-lower-arm"></div>
+
+              <!-- Legs -->
+              <div class="skeleton-leg left-upper-leg"></div>
+              <div class="skeleton-leg left-lower-leg"></div>
+              <div class="skeleton-leg right-upper-leg"></div>
+              <div class="skeleton-leg right-lower-leg"></div>
+
+              <!-- Feet -->
+              <div class="skeleton-foot left-foot"></div>
+              <div class="skeleton-foot right-foot"></div>
+
+              <!-- Joints -->
+              <div class="skeleton-joint neck-joint"></div>
+              <div class="skeleton-joint left-shoulder"></div>
+              <div class="skeleton-joint right-shoulder"></div>
+              <div class="skeleton-joint left-elbow"></div>
+              <div class="skeleton-joint right-elbow"></div>
+              <div class="skeleton-joint left-wrist"></div>
+              <div class="skeleton-joint right-wrist"></div>
+              <div class="skeleton-joint left-hip"></div>
+              <div class="skeleton-joint right-hip"></div>
+              <div class="skeleton-joint left-knee"></div>
+              <div class="skeleton-joint right-knee"></div>
+              <div class="skeleton-joint left-ankle"></div>
+              <div class="skeleton-joint right-ankle"></div>
+
+              <!-- Golf club -->
+              <div class="golf-club"></div>
+            </div>
+            <div class="scan-lines" id="scanLines"></div>
+            <div class="balance-indicator">
+              <div class="balance-fill" id="balanceFill"></div>
+            </div>
+          </div>
+          <p style="text-align: center; margin-top: 15px; color: #388e3c">
+            <i class="fas fa-user"></i> Golfer detected • Height:
+            <span id="personHeight">175cm</span> • Stance:
+            <span id="personBuild">Athletic Setup</span>
+          </p>
+        </div>
+
+        <div class="panel weight-panel">
+          <h3><i class="fas fa-shoe-prints"></i> Pressure Distribution</h3>
+          <div class="pressure-plate">
+            <div class="pressure-grid" id="pressureGrid"></div>
+          </div>
+          <div class="weight-display">
+            <div class="weight-metric">
+              <div class="weight-value" id="totalWeight">72.5</div>
+              <div class="weight-label">Total Weight (kg)</div>
+            </div>
+            <div class="weight-metric">
+              <div class="weight-value" id="maxPressure">8.2</div>
+              <div class="weight-label">Max Pressure (kg/cm²)</div>
+            </div>
+            <div class="weight-metric">
+              <div class="weight-value" id="leftFoot">36.1</div>
+              <div class="weight-label">Left Foot (kg)</div>
+            </div>
+            <div class="weight-metric">
+              <div class="weight-value" id="rightFoot">36.4</div>
+              <div class="weight-label">Right Foot (kg)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <h3><i class="fas fa-sliders-h"></i> Simulation Controls</h3>
+        <div class="btn-group">
+          <button class="btn" onclick="startScan()">
+            <i class="fas fa-play-circle"></i> Start 3D Scan
+          </button>
+          <button class="btn secondary" onclick="generateNewData()">
+            <i class="fas fa-random"></i> Generate New Person
+          </button>
+        </div>
+
+        <div class="view-toggle">
+          <div class="view-option active" onclick="toggleView('3d')">
+            <i class="fas fa-cube"></i> 3D View
+          </div>
+          <div class="view-option" onclick="toggleView('2d')">
+            <i class="fas fa-border-all"></i> 2D View
+          </div>
+          <div class="view-option" onclick="toggleView('skeleton')">
+            <i class="fas fa-bone"></i> Skeleton View
+          </div>
+        </div>
+      </div>
+
+      <div class="data-panel">
+        <h3><i class="fas fa-chart-line"></i> Sensor Data Stream</h3>
+        <div class="data-grid">
+          <div class="data-item">
+            <strong>Scan Resolution:</strong>
+            <span id="scanRes">1024x768 points</span>
+          </div>
+          <div class="data-item">
+            <strong>Pressure Sensors:</strong>
+            <span id="sensorCount">48 active sensors</span>
+          </div>
+          <div class="data-item">
+            <strong>Processing Time:</strong>
+            <span id="processTime">2.3 seconds</span>
+          </div>
+          <div class="data-item">
+            <strong>Accuracy:</strong>
+            <span id="accuracy">±0.1kg precision</span>
+          </div>
+          <div class="data-item">
+            <strong>Balance Score:</strong>
+            <span id="balanceScore">94% balanced</span>
+          </div>
+          <div class="data-item">
+            <strong>Foot Contact:</strong>
+            <span id="footContact">Full contact detected</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="instructions">
+        <h4><i class="fas fa-info-circle"></i> How to Use This Simulator</h4>
+        <ul>
+          <li>
+            <strong>Start 3D Scan</strong> - Initiates a full body scan with
+            rotating animation
+          </li>
+          <li>
+            <strong>Generate New Person</strong> - Creates a new golfer profile
+            with random attributes
+          </li>
+          <li>
+            <strong>View Modes</strong> - Toggle between 3D, 2D, and
+            skeleton-only visualization
+          </li>
+          <li>
+            <strong>Pressure Grid</strong> - Shows real-time pressure
+            distribution under feet
+          </li>
+          <li>
+            <strong>Balance Indicator</strong> - Visual representation of weight
+            distribution between feet
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      let isScanning = false;
+      let currentView = "3d";
+
+      // Initialize pressure grid
+      function initializePressureGrid() {
+        const grid = document.getElementById("pressureGrid");
+        grid.innerHTML = "";
+
+        for (let i = 0; i < 48; i++) {
+          const cell = document.createElement("div");
+          cell.className = "pressure-cell";
+          cell.id = `cell-${i}`;
+          grid.appendChild(cell);
+        }
+      }
+
+      // Simulate pressure data
+      function updatePressureData() {
+        const cells = document.querySelectorAll(".pressure-cell");
+
+        // Define foot pressure patterns (left and right foot areas)
+        const leftFootCells = [16, 17, 18, 24, 25, 26, 32, 33, 34, 40, 41, 42];
+        const rightFootCells = [21, 22, 23, 29, 30, 31, 37, 38, 39, 45, 46, 47];
+
+        cells.forEach((cell, index) => {
+          cell.classList.remove("active");
+          cell.style.setProperty("--pressure-color", "#e0f2f1");
+          cell.textContent = "";
+        });
+
+        // Get current weight distribution
+        const totalWeight = parseFloat(
+          document.getElementById("totalWeight").textContent
+        );
+        const leftWeight = parseFloat(
+          document.getElementById("leftFoot").textContent
+        );
+        const rightWeight = parseFloat(
+          document.getElementById("rightFoot").textContent
+        );
+
+        // Calculate pressure values
+        const leftPressure = leftWeight / leftFootCells.length;
+        const rightPressure = rightWeight / rightFootCells.length;
+
+        // Update left foot cells
+        leftFootCells.forEach((index) => {
+          const cell = cells[index];
+          if (cell) {
+            const pressure = leftPressure * (0.8 + Math.random() * 0.4); // Add some variation
+            const color = `hsl(${120 - Math.min(40, pressure * 8)}, 70%, ${
+              60 + Math.min(20, pressure * 4)
+            }%)`;
+            cell.classList.add("active");
+            cell.style.setProperty("--pressure-color", color);
+            cell.textContent = pressure.toFixed(1);
+          }
+        });
+
+        // Update right foot cells
+        rightFootCells.forEach((index) => {
+          const cell = cells[index];
+          if (cell) {
+            const pressure = rightPressure * (0.8 + Math.random() * 0.4);
+            const color = `hsl(${120 - Math.min(40, pressure * 8)}, 70%, ${
+              60 + Math.min(20, pressure * 4)
+            }%)`;
+            cell.classList.add("active");
+            cell.style.setProperty("--pressure-color", color);
+            cell.textContent = pressure.toFixed(1);
+          }
+        });
+
+        // Update balance indicator
+        const balanceFill = document.getElementById("balanceFill");
+        const balancePercentage = (leftWeight / totalWeight) * 100;
+        balanceFill.style.width = `${balancePercentage}%`;
+      }
+
+      // Start scanning animation
+      function startScan() {
+        if (isScanning) return;
+
+        isScanning = true;
+        const personModel = document.getElementById("personModel");
+        const scanLines = document.getElementById("scanLines");
+        const cameraStatus = document.getElementById("cameraStatus");
+        const processingStatus = document.getElementById("processingStatus");
+
+        // Update status
+        cameraStatus.textContent = "Scanning...";
+        processingStatus.textContent = "Processing 3D data...";
+
+        // Start animations
+        personModel.classList.add("rotating");
+        scanLines.classList.add("active");
+
+        // Simulate scanning process
+        setTimeout(() => {
+          personModel.classList.remove("rotating");
+          scanLines.classList.remove("active");
+          cameraStatus.textContent = "Scan Complete";
+          processingStatus.textContent = "Analysis Ready";
+
+          // Generate new weight data
+          updateWeightData();
+          updatePressureData();
+
+          setTimeout(() => {
+            cameraStatus.textContent = "Ready";
+            processingStatus.textContent = "Standby";
+            isScanning = false;
+          }, 2000);
+        }, 3000);
+      }
+
+      // Update weight measurements
+      function updateWeightData() {
+        const baseWeight = 60 + Math.random() * 40; // 60-100kg
+        const leftWeight = baseWeight * (0.45 + Math.random() * 0.1); // 45-55% of total
+        const rightWeight = baseWeight - leftWeight;
+        const maxPressure = 5 + Math.random() * 8; // 5-13 kg/cm²
+
+        document.getElementById("totalWeight").textContent =
+          baseWeight.toFixed(1);
+        document.getElementById("leftFoot").textContent = leftWeight.toFixed(1);
+        document.getElementById("rightFoot").textContent =
+          rightWeight.toFixed(1);
+        document.getElementById("maxPressure").textContent =
+          maxPressure.toFixed(1);
+
+        // Update balance score
+        const balance = Math.max(
+          0,
+          100 - Math.abs(leftWeight - rightWeight) * 5
+        );
+        document.getElementById(
+          "balanceScore"
+        ).textContent = `${balance.toFixed(0)}% balanced`;
+      }
+
+      // Generate new person data
+      function generateNewData() {
+        const heights = ["162cm", "168cm", "175cm", "182cm", "189cm"];
+        const stances = [
+          "Athletic Setup",
+          "Wide Stance",
+          "Narrow Stance",
+          "Open Stance",
+          "Closed Stance",
+        ];
+
+        document.getElementById("personHeight").textContent =
+          heights[Math.floor(Math.random() * heights.length)];
+        document.getElementById("personBuild").textContent =
+          stances[Math.floor(Math.random() * stances.length)];
+
+        // Update processing metrics
+        document.getElementById("processTime").textContent = `${(
+          1.5 +
+          Math.random() * 2
+        ).toFixed(1)} seconds`;
+        document.getElementById("scanRes").textContent = `${
+          800 + Math.floor(Math.random() * 400)
+        }x${600 + Math.floor(Math.random() * 300)} points`;
+
+        updateWeightData();
+        updatePressureData();
+      }
+
+      // Toggle between views
+      function toggleView(view) {
+        // Update active view buttons
+        document.querySelectorAll(".view-option").forEach((option) => {
+          option.classList.remove("active");
+        });
+        event.target.classList.add("active");
+
+        const personModel = document.getElementById("personModel");
+
+        // Reset all styles
+        personModel.style.transform = "";
+        personModel.style.borderRadius = "";
+
+        if (view === "3d") {
+          currentView = "3d";
+          personModel.style.transform = "rotateY(0deg)";
+        } else if (view === "2d") {
+          currentView = "2d";
+          personModel.style.transform = "rotateY(0deg) scaleX(0.3)";
+          personModel.style.borderRadius = "10px";
+        } else if (view === "skeleton") {
+          currentView = "skeleton";
+          // Hide non-skeleton elements
+          document
+            .querySelectorAll(
+              ".skeleton-head, .skeleton-neck, .skeleton-spine, .skeleton-ribcage, .skeleton-pelvis, .skeleton-arm, .skeleton-leg, .skeleton-foot"
+            )
+            .forEach((el) => {
+              el.style.opacity = "0.3";
+            });
+          // Show only joints
+          document.querySelectorAll(".skeleton-joint").forEach((el) => {
+            el.style.opacity = "1";
+          });
+          // Hide golf club
+          document.querySelector(".golf-club").style.display = "none";
+        }
+
+        // If switching back from skeleton view
+        if (currentView !== "skeleton") {
+          document
+            .querySelectorAll(
+              ".skeleton-head, .skeleton-neck, .skeleton-spine, .skeleton-ribcage, .skeleton-pelvis, .skeleton-arm, .skeleton-leg, .skeleton-foot"
+            )
+            .forEach((el) => {
+              el.style.opacity = "1";
+            });
+          document.querySelector(".golf-club").style.display = "block";
+        }
+      }
+
+      // Initialize the app
+      document.addEventListener("DOMContentLoaded", function () {
+        initializePressureGrid();
+        updatePressureData();
+
+        // Auto-update pressure data every 2 seconds
+        setInterval(updatePressureData, 2000);
+
+        // Auto-generate slight weight variations
+        setInterval(() => {
+          if (!isScanning) {
+            const currentWeight = parseFloat(
+              document.getElementById("totalWeight").textContent
+            );
+            const variation = (Math.random() - 0.5) * 0.2; // ±0.1kg variation
+            const newWeight = Math.max(
+              50,
+              Math.min(120, currentWeight + variation)
+            );
+
+            document.getElementById("totalWeight").textContent =
+              newWeight.toFixed(1);
+
+            // Update foot distribution slightly
+            const leftRatio = 0.48 + (Math.random() - 0.5) * 0.08; // 44-52%
+            const leftWeight = newWeight * leftRatio;
+            const rightWeight = newWeight - leftWeight;
+
+            document.getElementById("leftFoot").textContent =
+              leftWeight.toFixed(1);
+            document.getElementById("rightFoot").textContent =
+              rightWeight.toFixed(1);
+          }
+        }, 1500);
+
+        // Add rotation animation class
+        const style = document.createElement("style");
+        style.textContent = `
+                .person-model.rotating {
+                    animation: rotate360 3s linear infinite;
+                }
+                
+                @keyframes rotate360 {
+                    from { transform: rotateY(0deg); }
+                    to { transform: rotateY(360deg); }
+                }
+            `;
+        document.head.appendChild(style);
+      });
+    </script>
+  </body>
+</html>
